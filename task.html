@@ -40,6 +40,9 @@
         border-collapse: collapse;
         box-shadow: 10px 6px 3px 10px red;
     }
+    .vacation{
+        background-color: chartreuse;
+    }
 </style>
 <!-- Ссылка на внешний стиль -->
 <link rel="stylesheet" href="css/style.css">
@@ -53,7 +56,10 @@
         <div class="odd"><h2 id="shedule">Расписание звонков</h2></div>
         <div class="even"><h2 id="timetable">Расписание пар</h2></div>
         <div class="odd"><h2 id="diary">Дневник</h2></div>
-        <div class="even"><h2 id="accountancy">Бухгалтерия</h2></div>
+        <div class="even"><h2 id="buh">Бухгалтерия</h2>
+            <div id="wrapper"></div>
+        </div>
+        
 
         <div class="cat"></div>
         <div id="cat"></div>
@@ -174,7 +180,7 @@
             </div>
             <div>
                 <label for="Year">Год начала учебного года</label>
-                <input type="number" id="Year" name="year" min=2000 max=2026>
+                <input type="number" id="Year" name="Year" min=2000 max=2026>
             </div>
             <div>
                 <label for="Email">Email</label>
@@ -311,7 +317,10 @@
             this.vacation=data.vacation;
         }
         Employee.prototype.calculateNetSalary=function(){
-            return +(this.salary*1.15*0.87)
+            return +(this.salary*1.15*0.87).toFixed(2)
+        }
+        Employee.prototype.calculateNetSalary13=function(){
+            return +(this.salary13*1.15*0.87).toFixed(2)
         }
         Employee.prototype.calculateYearSalary=function(){
             return this.calculateNetSalary()*12
@@ -335,7 +344,7 @@
             }
             return [year,month]
         }
-        Employee.prototype.remainsToPerson =function(){
+        Employee.prototype.remainsToPenson =function(){
             const [year,month]=this.calculateAge()
             const months=this.gender==="m"? 64*12:59*12
             const remainsMoth=months-year*12+month
@@ -351,19 +360,53 @@
             const tempdate=new Date(this.birthday)
             return `${tempdate.getDate()}.${months[tempdate.getMonth()][1]}.${tempdate.getUTCFullYear()}`
         }
+        Employee.prototype.getAgeString=function(){
+            const [ageYear] = this.calculateAge();
+            if (ageYear%10===1 && ageYear%100!==11){
+                return ageYear+" год ";
+            }
+            if ((ageYear%10===2 || ageYear%10===3 || ageYear%10===4) && ageYear%100!==12 && ageYear %100!==13 && ageYear%100!==14){
+                return ageYear+" года ";
+
+            }
+            return ageYear + " лет "
+        }
+        Employee.prototype.getPensionString=function(){
+            const[rtpYear, rtpMonth]=this.remainsToPenson();
+            if(rtpYear===null){
+                return "дэд инсайд"
+            }
+            if(rtpYear===0){
+                return `${rtpMonth} месяцев`;
+            }
+            let Yearstr;
+            if (rtpYear%10===1 && rtpYear%100!==11){
+                Yearstr = rtpYear+" год ";
+            }
+            else if ((rtpYear%10===2 || rtpYear%10===3 || rtpYear%10===4) && rtpYear%100!==12 && rtpYear %100!==13 && rtpYear%100!==14){
+                Yearstr = rtpYear+" года ";
+            }
+            else{
+                Yearstr =rtpYear+ " лет "
+            }
+            if(rtpMonth===0){
+                return Yearstr;
+            }
+            return `${Yearstr} ${rtpMonth} месяцев`
+        }
         const months=[
-            ['','январь'],
-            ['','февраль'],
-            ['','март'],
-            ['','апрель'],
-            ['','май'],
-            ['','июнь'],
-            ['','июль'],
-            ['','август'],
-            ['','сентябрь'],
-            ['','октябрь'],
-            ['','ноябрь'],
-            ['','декабрь']
+            ['Январь','январь'],
+            ['Февраль','февраль'],
+            ['Март','март'],
+            ['Апрель','апрель'],
+            ['Май','май'],
+            ['Июнь','июнь'],
+            ['Июль','июль'],
+            ['Август','август'],
+            ['Сентябрь','сентябрь'],
+            ['Октябр','октябрь'],
+            ['Ноябрь','ноябрь'],
+            ['Декабрь','декабрь']
         ]
         for(let i=0; i<employees.length;i++){
             const employe=new Employee(employees[i]);
@@ -371,10 +414,75 @@
             const yearSalary=employe.calculateYearSalary();
             const taxreturn=employe.calculateTaxReturn();
             const newsalary=employe.calculateNewSalary();
-            const pension=employe.remainsToPerson();
+            const pension=employe.remainsToPenson();
             const formatOfBirthday=employe.formatBirthday();
             console.log(employe, netSelary, yearSalary,taxreturn,newsalary,pension, formatOfBirthday);
         }
+        let table=`<table><thead>
+            <tr>
+            <td>№</td>
+            <td>ФИО</td>
+            <td>Дата рождения</td>
+            <td>Возраст</td>
+            <td>Зарплата гросс.</td>
+            `;
+            for(let i=0;i<12;i++){
+                table+=`<td>${months[i][0]}</td>`
+            }
+            table+=`<td>Зарплата в ${new Date().getFullYear()+1}</td>
+            <td>Общий доход</td>
+            <td>К вычету</td>
+            <td>Ост. до пенсии</td>
+            </tr></thead><tbody>
+            `;
+            const rub="&#x20bd";
+            for(let i=0;i<employees.length;i++){
+                const employee=new Employee(employees[i]);
+                table+=`<tr>
+                    <td>${i+1}</td>
+                    <td>${employee.surname} ${employee.name} ${employee.patronymic}</td>
+                    <td>${employee.formatBirthday(months)}</td>
+                    <td>${employee.getAgeString(months)}</td>
+                    <td>${employee.salary}${rub}</td>`;
+                    for(let j=0;j<11;j++){
+                        table+=`<td ${j===employee.vacation ?
+                        'class="vacation"':""}>${employee.calculateNetSalary()}${rub}</td>`
+                    }
+                table+=`<td ${11===employee.vacation ?
+                        'class="vacation"':""}>${(employee.calculateNetSalary()+employee.calculateNetSalary13())}${rub}</td>
+                <td>${employee.calculateNewSalary()}${rub}</td>
+                <td>${employee.calculateYearSalary()}${rub}</td>
+                <td>${employee.calculateTaxReturn()}${rub}</td>
+                <td>${employee.getPensionString()}</td>
+                </tr>`;
+            }
+            table+=`</tbody></table>`
+
+            function generateDinary(e){
+                e.preventDefault();
+                let newWin=window.open("about:blank", "Дневник", "width=420, height=594");
+                let template=`
+                <style>
+                    body{
+                        margin-top: 100px;
+                        text-align: center;
+                        font-size: large;
+                        background-color: blue;
+                    }   
+                </style>
+                <h1>Дневник</h1>
+                <div>Учени${document.querySelector('[name=gender]:checked').value == "m"? "ка": "цы"} ${document.querySelector('#Class').value} класс</div>
+                <div>У${document.querySelector('#School')} ${document.querySelector('#Punkt').value}</div>
+                <div>${document.querySelector('#SNT')}</div>
+                <div>${document.querySelector('#Year')}/${document.querySelector('#Year').value} учебного года</div>
+
+                `;
+                newWin.document.write(template);
+            }
+            window.onload=()=>{
+                document.querySelector('#wrapper').innerHTML=table;
+                document.querySelector('#create').onclick=generateDinary;
+            }
         </script>
 </body>
 </html>
